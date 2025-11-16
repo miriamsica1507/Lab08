@@ -69,8 +69,8 @@ class Model:
                 self.__costo_ottimo = costo_corrente
                 self.__sequenza_ottima = sequenza_parziale.copy()
         else:
-            for scelt in scelta:
-                consumo_giorno = consumi_settimana[scelt][giorno]
+            for s in scelta:
+                consumo_giorno = consumi_settimana[s][giorno]
                 if giorno == 0:
                     costo_giorno = consumo_giorno
                 else:
@@ -80,8 +80,8 @@ class Model:
                         costo_giorno = costo_corrente
 
             sequenza_parziale.append(scelta)
-            sequenza_parziale.pop()
             self.__ricorsione([], giorno + 1, None, 0, consumi_settimana )
+            sequenza_parziale.pop()
 
     def __get_consumi_prima_settimana_mese(self, mese: int):
         """
