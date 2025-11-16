@@ -1,3 +1,6 @@
+import copy
+
+from database.consumo_DAO import ConsumoDAO
 from database.impianto_DAO import ImpiantoDAO
 
 '''
@@ -26,6 +29,19 @@ class Model:
         :return: lista di tuple --> (nome dell'impianto, media), es. (Impianto A, 123)
         """
         # TODO
+        result = []
+        for impianti in self._impianti:
+            id_impiant = impianti["id"]
+            nome = impianti["nome"]
+            consumi = ConsumoDAO.get_consumi(id_impianto = id_impiant)
+            consumi_mese = [c for c in consumi if c["mese"] == mese]
+            if not consumi_mese:
+                media = 0
+            else:
+                somma = sum(c["kwh"] for c in consumi_mese)
+                media = somma // len(consumi_mese)
+                result.append((nome, media))
+        return result
 
     def get_sequenza_ottima(self, mese:int):
         """
@@ -47,6 +63,25 @@ class Model:
     def __ricorsione(self, sequenza_parziale, giorno, ultimo_impianto, costo_corrente, consumi_settimana):
         """ Implementa la ricorsione """
         # TODO
+        scelta = self._impianti.id
+        if len(sequenza_parziale) == 7:
+            if costo_corrente < consumi_settimana:
+                self.__costo_ottimo = costo_corrente
+                self.__sequenza_ottima = sequenza_parziale.copy()
+        else:
+            for scelt in scelta:
+                consumo_giorno = consumi_settimana[scelt][giorno]
+                if giorno == 0:
+                    costo_giorno = consumo_giorno
+                else:
+                    if scelta != ultimo_impianto:
+                        costo_giorno = costo_corrente + 5
+                    else:
+                        costo_giorno = costo_corrente
+
+            sequenza_parziale.append(scelta)
+            sequenza_parziale.pop()
+            self.__ricorsione([], giorno + 1, None, 0, consumi_settimana )
 
     def __get_consumi_prima_settimana_mese(self, mese: int):
         """
@@ -54,4 +89,11 @@ class Model:
         :return: un dizionario: {id_impianto: [kwh_giorno1, ..., kwh_giorno7]}
         """
         # TODO
-
+        dizionario = {}
+        for impianti in self._impianti:
+            id_impiant = impianti["id"]
+            consumi = ConsumoDAO.get_consumi(id_impianto = id_impiant)
+            consumi_mese = [c for c in consumi if c["mese"] == mese]
+            lista_consumi_giorni = consumi_mese[:7]
+            dizionario[impianti["nome"]] = lista_consumi_giorni
+        return dizionario
