@@ -31,14 +31,14 @@ class Model:
         # TODO
         result = []
         for impianti in self._impianti:
-            id_impiant = impianti["id"]
-            nome = impianti["nome"]
+            id_impiant = impianti.id
+            nome = impianti.nome
             consumi = ConsumoDAO.get_consumi(id_impianto = id_impiant)
-            consumi_mese = [c for c in consumi if c["mese"] == mese]
+            consumi_mese = [c for c in consumi if c.data.month == mese]
             if not consumi_mese:
                 media = 0
             else:
-                somma = sum(c["kwh"] for c in consumi_mese)
+                somma = sum(c.kwh for c in consumi_mese)
                 media = somma // len(consumi_mese)
                 result.append((nome, media))
         return result
@@ -63,23 +63,21 @@ class Model:
     def __ricorsione(self, sequenza_parziale, giorno, ultimo_impianto, costo_corrente, consumi_settimana):
         """ Implementa la ricorsione """
         # TODO
-        scelta = self._impianti.id
+        impianto_id = []
+        for impianto in self._impianti:
+            impianto_id.append(impianto.id)
         if len(sequenza_parziale) == 7:
             if costo_corrente < consumi_settimana:
                 self.__costo_ottimo = costo_corrente
                 self.__sequenza_ottima = sequenza_parziale.copy()
         else:
-            for s in scelta:
-                consumo_giorno = consumi_settimana[s][giorno]
-                if giorno == 0:
-                    costo_giorno = consumo_giorno
-                else:
-                    if scelta != ultimo_impianto:
-                        costo_giorno = costo_corrente + 5
-                    else:
-                        costo_giorno = costo_corrente
-
-            sequenza_parziale.append(scelta)
+            consumo_giorno = consumi_settimana[impianto_id][giorno-1]
+            costo_giorno = consumo_giorno
+            if impianto_id != ultimo_impianto:
+                costo_giorno = costo_giorno + 5
+            nuovo_costo = costo_corrente + costo_giorno
+            self.__costo_ottimo = nuovo_costo
+            sequenza_parziale.append(impianto_id)
             self.__ricorsione([], giorno + 1, None, 0, consumi_settimana )
             sequenza_parziale.pop()
 
@@ -91,9 +89,10 @@ class Model:
         # TODO
         dizionario = {}
         for impianti in self._impianti:
-            id_impiant = impianti["id"]
+            id_impiant = impianti.id
             consumi = ConsumoDAO.get_consumi(id_impianto = id_impiant)
-            consumi_mese = [c for c in consumi if c["mese"] == mese]
-            lista_consumi_giorni = consumi_mese[:7]
-            dizionario[impianti["nome"]] = lista_consumi_giorni
+            consumi_mese = [c for c in consumi if c.data.month == mese]
+            consumi_mese.sort(key = lambda c: c.data.day)
+            lista_consumi_giorni = [c for c in consumi_mese if c.data.day < 7 ]
+            dizionario[impianti.id] = lista_consumi_giorni
         return dizionario
